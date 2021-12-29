@@ -3,6 +3,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
+      - pip install --upgrade awscli==1.18.17 ### Here is my update - and it works
       - aws --version
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       - REPOSITORY_URI=<642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest>
