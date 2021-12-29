@@ -3,10 +3,11 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - pip install --upgrade awscli==1.18.17 ### Here is my update - and it works
+      #pip install --upgrade awscli==1.18.17 ### Here is my update - and it works
       - aws --version
-      - $(aws ecr get-login --no-include-email --region us-east-1)
-      - REPOSITORY_URI=<642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest>
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 642512558314.dkr.ecr.us-east-1.amazonaws.com
+      #$(aws ecr get-login --no-include-email --region us-east-1)
+      - REPOSITORY_URI=642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
 build:
@@ -22,7 +23,7 @@ post_build:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"<firstpipeline>","imageUri":"%s"}]'    $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"firstpipeline","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
 artifacts:
   files: imagedefinitions.json
