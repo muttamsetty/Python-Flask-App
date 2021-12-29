@@ -1,19 +1,18 @@
 version: 0.2
 phases:
-  install:
-    runtime-versions:
-      docker: 18
-  pre_build:
-    commands:
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 642512558314.dkr.ecr.us-east-1.amazonaws.com
-      - REPOSITORY_URI=642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline
-  build:
-    commands:
-      - docker build -t firstpipeline .
-      - docker tag firstpipeline:latest 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
-  post_build:
-    commands:
-      - docker push 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
-      - printf '[{"name":"firstpipeline","imageUri":"%s"}]' 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest > imagedefinitions.json
+ pre_build:
+   commands:
+     - REPOSITORY_URI=642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
+     - echo $CODEBUILD_RESOLVED_SOURCE_VERSION      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION)
+     - IMAGE_TAG=${COMMIT_HASH}:latest
+     - $(aws ecr get-login --no-include-email --region us-east-1)
+ install:
+   runtime-versions:
+     java: corretto11
+ build:
+   commands:
+   - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:latest > imageDetail.json
+   - docker build -t 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest .
+   - docker push 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
 artifacts:
-  files: imagedefinitions.json
+files: imageDetail.json
