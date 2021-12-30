@@ -1,18 +1,38 @@
 version: 0.2
-phases:
- pre_build:
-   commands:
-     - REPOSITORY_URI=642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
-     - echo $CODEBUILD_RESOLVED_SOURCE_VERSION      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION)
-     - IMAGE_TAG=${COMMIT_HASH}:latest
-     - $(aws ecr get-login --no-include-email --region us-east-1)
- install:
-   runtime-versions:
-     java: corretto11
- build:
-   commands:
-   - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:latest > imageDetail.json
-   - docker build -t 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest .
-   - docker push 642512558314.dkr.ecr.us-east-1.amazonaws.com/firstpipeline:latest
+phases: 
+  install:
+    runtime-versions:
+        python: 3.7
+    commands: 
+      
+  pre_build: 
+    commands: 
+    - echo Logging in to Amazon ECR.... 
+    - aws --version
+    # update the following line with your own region
+    - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+    - REPOSITORY_URI=642512558314.dkr.ecr.us-east-1.amazonaws.com/demo
+    - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-50)
+    - IMAGE_TAG=${COMMIT_HASH:=latest}
+    - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+  build: 
+    commands: 
+    - echo Build started on `date` 
+    - echo Building the Docker image... 
+    # update the following line with the name of your own ECR repository
+    - docker build -t $REPOSITORY_URI:latest .
+    # update the following line with the URI of your own ECR repository (view the Push Commands in the console)
+    - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG 
+  post_build: 
+    commands: 
+    - echo Build completed on `date` 
+    - echo pushing to repo
+    # update the following line with the URI of your own ECR repository
+    - docker push $REPOSITORY_URI:latest
+    - docker push $REPOSITORY_URI:$IMAGE_TAG
+    - echo Writing image definitions file... 
+    - printf '[{"name":"test","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+
 artifacts:
-  files: imageDetail.json
+  files:
+   - imagedefinitions.json
